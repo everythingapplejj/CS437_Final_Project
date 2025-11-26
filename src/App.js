@@ -30,7 +30,7 @@ function App() {
           Real Time Crypto Stocks 
         </Typography>
         <Paper elevation={3} sx={{ backgroundColor:"black", p: 2 }}>
-          <Typography variant="h6" gutterBottom align = "center">
+          <Typography variant="h6" gutterBottom align = "center" sx = {{color: "white"}}>
             Bitcoin and Ethereum Price Trends
           </Typography>
           <ResponsiveContainer width="100%" height={400}>
