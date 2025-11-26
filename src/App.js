@@ -1,4 +1,5 @@
 import React from 'react';
+import {useState, useEffect } from 'react'; //* This one allows to utilize states for the timer
 import {Container, Box, Paper, Typography} from '@mui/material'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -15,6 +16,36 @@ function App() {
     { date: 'Jan 7', bitcoin: 46200, ethereum: 3320 },
   ];
 
+
+  //* Constructin timer components and formatters
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());}, 1000); 
+    return () => clearInterval(timer);
+    }, []);
+  
+
+    const formatTime = (date) => {
+      return date.toLocaleTimeString('en-US', {
+        hour12: true, 
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    };
+
+    const formatDate = (date) => {
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
+
   return (
     <Box sx = {
       {
@@ -29,6 +60,18 @@ function App() {
         <Typography variant="h4" component="h1" gutterBottom align= "center" sx = {{color: "white"}}>
           Real Time Crypto Stocks 
         </Typography>
+        {/* Adding the clock compoenent */}
+      <Paper elevation={2} sx={{ backgroundColor: "#333", p: 2, mb: 3, textAlign: "center" }}>
+          <Typography variant="h5" sx={{ color: "#fff", fontWeight: "bold" }}>
+            {formatTime(currentTime)}
+          </Typography>
+          <Typography variant="subtitle1" sx={{ color: "#ccc" }}>
+            {formatDate(currentTime)}
+          </Typography>
+      </Paper>
+
+
+        {/* //* this is for the chart compoenent */}
         <Paper elevation={3} sx={{ backgroundColor:"black", p: 2 }}>
           <Typography variant="h6" gutterBottom align = "center" sx = {{color: "white"}}>
             Bitcoin and Ethereum Price Trends
