@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 function App() {
 
-  //* Hardcoded data for now, 
+  //* Hardcoded data for now, will be usings api in the future, after backend implementation
   const data = [
     { date: 'Jan 1', bitcoin: 45000, ethereum: 3200 },
     { date: 'Jan 2', bitcoin: 45500, ethereum: 3250 },
@@ -26,10 +26,10 @@ function App() {
 
     <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom align= "center">
+        <Typography variant="h4" component="h1" gutterBottom align= "center" sx = {{color: "white"}}>
           Real Time Crypto Stocks 
         </Typography>
-        <Paper elevation={3} sx={{ p: 2 }}>
+        <Paper elevation={3} sx={{ backgroundColor:"black", p: 2 }}>
           <Typography variant="h6" gutterBottom align = "center">
             Bitcoin and Ethereum Price Trends
           </Typography>
