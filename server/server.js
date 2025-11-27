@@ -18,25 +18,35 @@ const PORT = process.env.PORT || 3001;
 
 const server = http.createServer(app);
 
-//* creating the asynchrnous function for the api, allows non-blocking operations
 app.get('/api/crypto/prices/real', async (req, res) => {
-
-    try{
-        const {ids} = req.query;
-        if(!ids) {
-            //* in the case that there is no id, 
-            return res.status(400).json( {
+    try {
+        const { ids } = req.query;
+        console.log('Received request with ids:', ids);
+        
+        if (!ids) {
+            return res.status(400).json({
                 success: false, 
-                message: "missing parameter input"
-            })
+                message: "Missing parameter: ids"
+            });
         }
+        console.log('Fetching from CoinGecko for:', ids);
+        const response = await axios.get(
+            `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
+        );
+
+        console.log('CoinGecko response received');
+        res.json({
+            success: true, 
+            data: response.data,
+            message: 'Real crypto prices fetched successfully!'
+        });
+
     } catch (error) {
-        console.error("Error Fetching Data: ", error);
-        //* Now gets the error response to the frontend
+        console.error("Error Fetching Data: ", error.message);
         res.status(500).json({
-            sucess: false, 
-            message: "Error Fetching Crypto Prices ...."
-        })
+            success: false, 
+            message: "Error fetching crypto prices from external API"
+        });
     }
 });
 
