@@ -10,7 +10,8 @@ const app = express() //* Using express for the app, axios setup for the fronten
 
 //* this is setting up the middleware
 app.use(cors())
-app.use(express.json())
+app.use(express.json()) 
+
 
 const PORT = process.env.PORT || 3001;
 
