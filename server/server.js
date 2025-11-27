@@ -22,7 +22,14 @@ const server = http.createServer(app);
 app.get('/api/crypto/prices/real', async (req, res) => {
 
     try{
-
+        const {ids} = req.query;
+        if(!ids) {
+            //* in the case that there is no id, 
+            return res.status(400).json( {
+                success: false, 
+                message: "missing parameter input"
+            })
+        }
     } catch (error) {
         console.error("Error Fetching Data: ", error);
         //* Now gets the error response to the frontend
