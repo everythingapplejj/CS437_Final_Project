@@ -7,6 +7,7 @@ const os = require('os');
 const express = require('express')
 const cors = require('cors')
 const app = express() //* Using express for the app, axios setup for the frontend 
+const axios = require('axios');
 
 //* this is setting up the middleware
 app.use(cors())
