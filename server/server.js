@@ -18,6 +18,25 @@ const PORT = process.env.PORT || 3001;
 
 const server = http.createServer(app);
 
+//* creating the asynchrnous function for the api, allows non-blocking operations
+app.get('/api/crypto/prices/real', async (req, res) => {
+
+    try{
+
+    } catch (error) {
+        console.error("Error Fetching Data: ", error);
+        //* Now gets the error response to the frontend
+        res.status(500).json({
+            sucess: false, 
+            message: "Error Fetching Crypto Prices ...."
+        })
+    }
+});
+
+
+
+
+
 async function startServer() {
   server.listen(PORT, () => {
     console.log(`Listening on port ${PORT}...`);
