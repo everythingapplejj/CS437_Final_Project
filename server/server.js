@@ -51,6 +51,49 @@ app.get('/api/crypto/prices/real', async (req, res) => {
 });
 
 
+app.get('/api/stocks/prices', async (req, res) => {
+  try {
+    const { symbols } = req.query;
+    if (!symbols) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing parameter: symbols"
+      });
+    }
+
+    const apiKey = process.env.STOCK_API_KEY;
+    const symbolArr = symbols.split(',');
+    const result = {};
+
+    for (const symbol of symbolArr) {
+      const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
+      const response = await axios.get(url);
+      
+      if (response.data['Global Quote']) {
+        const quote = response.data['Global Quote'];
+        result[symbol] = {
+          usd: parseFloat(quote["05. price"]),
+          usd_24h_change: parseFloat(quote["10. change percent"].replace("%", ""))
+        };
+      }
+    }
+
+    res.json({
+      success: true,
+      data: result,
+      message: "Stock prices fetched successfully!"
+    });
+
+  } catch (error) {
+    console.error("Error Fetching Stock Data: ", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching stock prices from AlphaVantage"
+    });
+  }
+});
+
+
 
 
 
