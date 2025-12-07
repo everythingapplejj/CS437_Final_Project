@@ -6,14 +6,23 @@ import {Container, Box, Paper, Typography, Chip, Grid, Card, CardContent, TextFi
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 function App() {
-  const allAssets = [
+  // const allAssets = [
+  //   { id: 'bitcoin', name: 'Bitcoin', color: '#ff7300' },
+  //   { id: 'ethereum', name: 'Ethereum', color: '#82ca9d' },
+  //   { id: 'AAPL', name: 'Apple', color: '#1a73e8'},
+  //   { id: 'VOO', name: 'Vanguard S&P 500 (VOO)', color: '#8884d8' },
+  //   { id: 'NFLX', name: 'Netflix', color: '#e50914' },
+    
+  // ];
+
+  const [allAssets, setAllAssets] = useState([
     { id: 'bitcoin', name: 'Bitcoin', color: '#ff7300' },
     { id: 'ethereum', name: 'Ethereum', color: '#82ca9d' },
     { id: 'AAPL', name: 'Apple', color: '#1a73e8'},
     { id: 'VOO', name: 'Vanguard S&P 500 (VOO)', color: '#8884d8' },
     { id: 'NFLX', name: 'Netflix', color: '#e50914' },
-    
-  ];
+  ]);
+  
 
   const [selectedAssets, setSelectedAssets] = useState(['bitcoin', 'ethereum']);
   const [data, setData] = useState([]);
@@ -21,6 +30,8 @@ function App() {
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [latestPrices, setLatestPrices] = useState({});
+  const [newSymbol, setNewSymbol] = useState("");
+
   
 
   const fetchStockData = async (stockids) => {
@@ -143,6 +154,49 @@ function App() {
         }
       };
     };
+
+    const addNewStock = async (symbol) => {
+      if (!symbol) return;
+      if (allAssets.find(a => a.id === symbol)) {
+        alert("This symbol is already added!");
+        return;
+      }
+    
+      const apiKey = process.env.REACT_APP_STOCK_API_KEY;
+      const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
+    
+      try {
+        const response = await fetch(url);
+        const result = await response.json();
+    
+        if (!result["Global Quote"]) {
+          alert("Invalid stock symbol or no data available");
+          return;
+        }
+    
+        const randomColor = "#" + Math.floor(Math.random() * 16777215).toString(16);
+    
+        const newAsset = {
+          id: symbol,
+          name: symbol.toUpperCase(),
+          color: randomColor
+        };
+    
+        setAllAssets(prev => [...prev, newAsset]);
+        setSelectedAssets(prev => [...prev, symbol]);
+    
+        const adaptedData = adaptStockData(result, symbol);
+        setLatestPrices(prev => ({
+          ...prev,
+          ...adaptedData
+        }));
+    
+        setNewSymbol("");
+      } catch (error) {
+        console.error("Error adding stock:", error);
+      }
+    };
+    
 
   const transformApiData = (apiData) => {
     const currentPrices = {};
@@ -292,6 +346,24 @@ function App() {
             )}
           </Paper>
           <Paper elevation={2} sx={{ backgroundColor: "#1a1a1a", p: 3, mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 2 }}>
+            <TextField
+              variant="outlined"
+              size="small"
+              placeholder="Enter stock symbol (e.g., TSLA)"
+              sx={{ backgroundColor: "#fff", borderRadius: 1 }}
+              value={newSymbol.toUpperCase()}
+              onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => addNewStock(newSymbol)}
+            >
+              Add
+            </Button>
+          </Box>
+
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center', mb: 2 }}>
               {allAssets.map(asset => (
                 <Chip
