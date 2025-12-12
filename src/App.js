@@ -32,7 +32,60 @@ function App() {
   const [latestPrices, setLatestPrices] = useState({});
   const [newSymbol, setNewSymbol] = useState("");
 
-  
+
+  const [emailEnabled, setEmailEnabled] = useState(false);
+  const [emailAddress, setEmailAddress] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [emailSuccess, setEmailSuccess] = useState('');
+
+
+
+
+  const sendEmailNotification = async (data) => {
+    if (!emailEnabled || !emailAddress) return;
+    
+    try {
+      const subject = `Asset Update - ${new Date().toLocaleString()}`;
+      
+      let text = "Asset Price Update:\n\n";
+      selectedAssets.forEach(assetId => {
+        const asset = allAssets.find(a => a.id === assetId);
+        const priceData = data[assetId];
+        if (asset && priceData) {
+          text += `${asset.name}: $${priceData.usd.toFixed(2)} `;
+          if (priceData.usd_24h_change) {
+            text += `(${priceData.usd_24h_change >= 0 ? '+' : ''}${priceData.usd_24h_change.toFixed(2)}%)\n`;
+          }
+        }
+      });
+      text += `\nLast updated: ${new Date().toLocaleString()}`;
+      
+      const response = await fetch('http://localhost:3001/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: emailAddress,
+          subject: subject,
+          text: text
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setEmailSuccess('Email sent successfully!');
+        setTimeout(() => setEmailSuccess(''), 3000);
+      } else {
+        setEmailError('Failed to send email');
+      }
+    } catch (err) {
+      console.error('Error sending email:', err);
+      setEmailError('Error sending email notification');
+    }
+  };
+ 
 
   const fetchStockData = async (stockids) => {
     try {
@@ -127,6 +180,11 @@ function App() {
   
       // Global UI timestamp
       setLastUpdate(new Date());
+
+      if(emailEnabled && emailAddress) {
+        sendEmailNotification(latestPrices);
+      }
+      
   
     } catch (err) {
       setError(err.message || "Failed to update asset data.");
@@ -399,6 +457,97 @@ function App() {
 
         {Object.keys(latestPrices).length > 0 && (
             <Paper elevation={3} sx={{ backgroundColor: "#1a1a1a", p: 3, mb: 3 }}>
+            <Paper elevation={2} sx={{ backgroundColor: "#1a1a1a", p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ color: "white", mb: 2 }}>
+              Email Notifications
+            </Typography>
+            
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} sm={4}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="body1" sx={{ color: 'white', mr: 2 }}>
+                    Enable Email Updates:
+                  </Typography>
+                  <Box
+                    onClick={() => setEmailEnabled(!emailEnabled)}
+                    sx={{
+                      width: 60,
+                      height: 30,
+                      backgroundColor: emailEnabled ? '#4caf50' : '#666',
+                      borderRadius: 15,
+                      cursor: 'pointer',
+                      position: 'relative',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 3,
+                        left: emailEnabled ? 33 : 3,
+                        width: 24,
+                        height: 24,
+                        backgroundColor: 'white',
+                        borderRadius: '50%',
+                        transition: 'all 0.3s ease'
+                      }}
+                    />
+                  </Box>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  placeholder="Enter your email address"
+                  value={emailAddress}
+                  onChange={(e) => setEmailAddress(e.target.value)}
+                  sx={{
+                    backgroundColor: "#fff",
+                    borderRadius: 1,
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: emailEnabled ? '#4caf50' : '#666',
+                      },
+                    }
+                  }}
+                  disabled={!emailEnabled}
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={2}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={() => sendEmailNotification(latestPrices)}
+                  disabled={!emailEnabled || !emailAddress}
+                  sx={{ height: '40px' }}
+                >
+                  Test Email
+                </Button>
+              </Grid>
+            </Grid>
+            
+            {emailError && (
+              <Typography variant="body2" sx={{ color: '#ff4444', mt: 2 }}>
+                {emailError}
+              </Typography>
+            )}
+            
+            {emailSuccess && (
+              <Typography variant="body2" sx={{ color: '#4caf50', mt: 2 }}>
+                {emailSuccess}
+              </Typography>
+            )}
+            
+            <Typography variant="caption" sx={{ color: '#aaa', display: 'block', mt: 2 }}>
+              {emailEnabled 
+                ? 'Email notifications will be sent every 30 seconds with updates.' 
+                : 'Toggle on to receive email updates every 30 seconds.'}
+            </Typography>
+          </Paper>
               <Typography variant="h6" gutterBottom align="center" sx={{ color: "white", mb: 3 }}>
                 Current Prices
               </Typography>

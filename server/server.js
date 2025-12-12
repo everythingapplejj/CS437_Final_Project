@@ -24,29 +24,46 @@ const server = http.createServer(app);
 let transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, 
-    pass: process.env.EMAIL_PASS
+    user: "csfinalprojectapp@gmail.com", 
+    pass: "luem zgzq vsjn wrbi" 
   }
 });
 
 
 //* So this is the endpoint for the email
-app.post('api/send-email', async (req, res) => {
+app.post('/api/send-email', async (req, res) => {
   try {
     const {to, subject, text} = req.body;
+    
+    if (!to || !subject || !text) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      });
+    }
+    
     let info = await transporter.sendMail({ 
       from: `"CS 437 Final Project Update" <${process.env.EMAIL_USER}>`,
       to: to,
       subject: subject, 
       text: text  
-    })
+    });
+    
+    console.log("Email sent:", info.messageId);
+    
+    res.json({
+      success: true,
+      message: "Email sent successfully",
+      messageId: info.messageId
+    });
+    
   } catch (error) {
     console.error("Error Sending Email: ", error); 
     res.status(500).json({
       success: false, 
       message: "Failed to send email",
       error: error.message
-    })
+    });
   }
 });
 
