@@ -2,7 +2,7 @@
 
 import React from 'react';
 import {useState, useEffect } from 'react';
-import {Container, Box, Paper, Typography, Chip, Grid, Card, CardContent, TextField, Button} from '@mui/material'
+import {Container, Box, Paper, Typography, Chip, Grid, Card, CardContent, TextField, Button, Slider} from '@mui/material'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 function App() {
@@ -39,7 +39,140 @@ function App() {
   const [emailSuccess, setEmailSuccess] = useState('');
 
 
+  const [alertEnabled, setAlertEnabled] = useState(false);
+  const [alertThreshold, setAlertThreshold] = useState(5); 
+  const [lastAlertedPrices, setLastAlertedPrices] = useState({});
+  const [alertCooldown, setAlertCooldown] = useState({});
 
+
+
+
+  // const checkPriceAlerts = (newPrices) => {
+  //   if (!alertEnabled || !emailAddress) return false;
+    
+  //   const currentTime = Date.now();
+  //   const COOLDOWN_PERIOD = 300000; // 5 minutes in milliseconds
+    
+  //   let shouldSendAlert = false;
+  //   const alerts = [];
+    
+  //   selectedAssets.forEach(assetId => {
+  //     const asset = allAssets.find(a => a.id === assetId);
+  //     const newPriceData = newPrices[assetId];
+  //     const lastAlertedPrice = lastAlertedPrices[assetId];
+      
+  //     if (!asset || !newPriceData) return;
+      
+  //     // Check if we have a previous price to compare
+  //     if (lastAlertedPrice && latestPrices[assetId]) {
+  //       const priceChange = Math.abs(
+  //         ((newPriceData.usd - latestPrices[assetId].usd) / latestPrices[assetId].usd) * 100
+  //       );
+        
+  //       const lastAlertTime = alertCooldown[assetId] || 0;
+  //       const timeSinceLastAlert = currentTime - lastAlertTime;
+        
+  //       if (priceChange >= alertThreshold && timeSinceLastAlert > COOLDOWN_PERIOD) {
+  //         shouldSendAlert = true;
+  //         alerts.push({
+  //           asset: asset.name,
+  //           oldPrice: latestPrices[assetId].usd,
+  //           newPrice: newPriceData.usd,
+  //           change: ((newPriceData.usd - latestPrices[assetId].usd) / latestPrices[assetId].usd) * 100,
+  //           direction: newPriceData.usd > latestPrices[assetId].usd ? 'up' : 'down'
+  //         });
+          
+  //         // Update cooldown for this asset
+  //         setAlertCooldown(prev => ({
+  //           ...prev,
+  //           [assetId]: currentTime
+  //         }));
+  //       }
+  //     }
+  //   });
+    
+  //   if (shouldSendAlert && alerts.length > 0) {
+  //     sendAlertEmail(alerts, newPrices);
+  //   }
+    
+  //   // Update last alerted prices for future comparisons
+  //   const updatedLastAlertedPrices = { ...lastAlertedPrices };
+  //   selectedAssets.forEach(assetId => {
+  //     if (newPrices[assetId]) {
+  //       updatedLastAlertedPrices[assetId] = newPrices[assetId].usd;
+  //     }
+  //   });
+  //   setLastAlertedPrices(updatedLastAlertedPrices);
+    
+  //   return shouldSendAlert;
+  // };
+
+
+  const checkPriceAlerts = (newPrices) => {
+  if (!alertEnabled || !emailAddress || !emailEnabled) {
+    console.log('Alerts disabled or no email address');
+    return false;
+  }
+  
+  const currentTime = Date.now();
+  const COOLDOWN_PERIOD = 300000; // 5 minutes in milliseconds
+  
+  let shouldSendAlert = false;
+  const alerts = [];
+  
+  selectedAssets.forEach(assetId => {
+    const asset = allAssets.find(a => a.id === assetId);
+    const newPriceData = newPrices[assetId];
+    
+    if (!asset || !newPriceData || !latestPrices[assetId]) return;
+    
+    // Calculate percentage change
+    const priceChange = Math.abs(
+      ((newPriceData.usd - latestPrices[assetId].usd) / latestPrices[assetId].usd) * 100
+    );
+    
+    // Check cooldown
+    const lastAlertTime = alertCooldown[assetId] || 0;
+    const timeSinceLastAlert = currentTime - lastAlertTime;
+    
+    // Check if threshold is met and cooldown has passed
+    if (priceChange >= alertThreshold && timeSinceLastAlert > COOLDOWN_PERIOD) {
+      shouldSendAlert = true;
+      alerts.push({
+        asset: asset.name,
+        oldPrice: latestPrices[assetId].usd,
+        newPrice: newPriceData.usd,
+        change: ((newPriceData.usd - latestPrices[assetId].usd) / latestPrices[assetId].usd) * 100,
+        direction: newPriceData.usd > latestPrices[assetId].usd ? 'up' : 'down'
+      });
+      
+      // Update cooldown for this asset
+      setAlertCooldown(prev => ({
+        ...prev,
+        [assetId]: currentTime
+      }));
+      
+      console.log(`⚠️ Alert triggered for ${asset.name}: ${priceChange.toFixed(2)}% change`);
+    }
+  });
+  
+  // Send alert email if we have any alerts
+  if (shouldSendAlert && alerts.length > 0) {
+    console.log(`📧 Sending alert email for ${alerts.length} assets`);
+    sendAlertEmail(alerts, newPrices);
+  }
+  
+  // Update last alerted prices for future comparisons
+  const updatedLastAlertedPrices = { ...lastAlertedPrices };
+  selectedAssets.forEach(assetId => {
+    if (newPrices[assetId]) {
+      updatedLastAlertedPrices[assetId] = newPrices[assetId].usd;
+    }
+  });
+  setLastAlertedPrices(updatedLastAlertedPrices);
+  
+  return shouldSendAlert;
+};
 
   const sendEmailNotification = async (data) => {
     if (!emailEnabled || !emailAddress) return;
@@ -85,7 +218,134 @@ function App() {
       setEmailError('Error sending email notification');
     }
   };
- 
+
+
+
+  // const sendAlertEmail = async (alerts, currentPrices) => {
+  //   try {
+  //     const subject = `Price Alert - ${alerts.length} asset${alerts.length > 1 ? 's' : ''} exceeded ${alertThreshold}% threshold`;
+      
+  //     let text = "PRICE ALERT!\n\n";
+  //     text += `One or more assets have changed by ${alertThreshold}% or more:\n\n`;
+      
+  //     alerts.forEach(alert => {
+  //       text += `${alert.asset}:\n`;
+  //       text += `  Previous: $${alert.oldPrice.toFixed(2)}\n`;
+  //       text += `  Current: $${alert.newPrice.toFixed(2)}\n`;
+  //       text += `  Change: ${alert.change >= 0 ? '+' : ''}${alert.change.toFixed(2)}%\n`;
+  //       text += `  Direction: ${alert.direction.toUpperCase()}\n\n`;
+  //     });
+      
+  //     text += "\nCurrent Prices:\n";
+  //     selectedAssets.forEach(assetId => {
+  //       const asset = allAssets.find(a => a.id === assetId);
+  //       const priceData = currentPrices[assetId];
+  //       if (asset && priceData) {
+  //         text += `${asset.name}: $${priceData.usd.toFixed(2)}\n`;
+  //       }
+  //     });
+      
+  //     text += `\nTime: ${new Date().toLocaleString()}\n`;
+  //     text += "Alert Threshold: " + alertThreshold + "%\n";
+      
+  //     const response = await fetch('http://localhost:3001/api/send-email', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         to: emailAddress,
+  //         subject: subject,
+  //         text: text
+  //       })
+  //     });
+      
+  //     const result = await response.json();
+      
+  //     if (result.success) {
+  //       console.log('Alert email sent successfully!');
+  //     } else {
+  //       console.error('Failed to send alert email');
+  //     }
+  //   } catch (err) {
+  //     console.error('Error sending alert email:', err);
+  //   }
+  // };
+
+
+
+  const sendAlertEmail = async (alerts, currentPrices) => {
+  if (!emailAddress) return; // Ensure email address is set
+  
+  try {
+    const subject = `🚨 Price Alert - ${alerts.length} asset${alerts.length > 1 ? 's' : ''} changed by ${alertThreshold}%+`;
+    
+    let text = "🚨 PRICE ALERT NOTIFICATION 🚨\n\n";
+    text += `One or more assets have changed by ${alertThreshold}% or more:\n\n`;
+    text += "=".repeat(50) + "\n\n";
+    
+    alerts.forEach((alert, index) => {
+      text += `ALERT ${index + 1}: ${alert.asset}\n`;
+      text += `• Previous Price: $${alert.oldPrice.toFixed(2)}\n`;
+      text += `• Current Price: $${alert.newPrice.toFixed(2)}\n`;
+      text += `• Change: ${alert.change >= 0 ? '+' : ''}${alert.change.toFixed(2)}%\n`;
+      text += `• Direction: ${alert.direction === 'up' ? '📈 INCREASE' : '📉 DECREASE'}\n`;
+      text += `• Alert Threshold: ${alertThreshold}%\n`;
+      text += "\n" + "─".repeat(40) + "\n\n";
+    });
+    
+    text += "CURRENT PORTFOLIO STATUS:\n";
+    text += "=".repeat(50) + "\n";
+    selectedAssets.forEach(assetId => {
+      const asset = allAssets.find(a => a.id === assetId);
+      const priceData = currentPrices[assetId];
+      if (asset && priceData) {
+        const change = priceData.usd_24h_change || 0;
+        text += `${asset.name}: $${priceData.usd.toFixed(2)} `;
+        text += `(${change >= 0 ? '+' : ''}${change.toFixed(2)}%)\n`;
+      }
+    });
+    
+    text += `\n⏰ Alert Time: ${new Date().toLocaleString()}\n`;
+    text += `📊 Total Assets Monitored: ${selectedAssets.length}\n`;
+    text += `⚠️ Alert Threshold: ${alertThreshold}%\n`;
+    text += `⏳ Next Alert (Cooldown): 5 minutes per asset\n\n`;
+    text += "This is an automated alert from your Asset Tracker.\n";
+    text += "You can adjust your alert settings in the application.";
+    
+    // Send email via your backend
+    const response = await fetch('http://localhost:3001/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: emailAddress,
+        subject: subject,
+        text: text,
+        isAlert: true // Optional flag to distinguish alert emails
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('✅ Alert email sent successfully!');
+      // Show a temporary success message in UI
+      setEmailSuccess(`Alert sent for ${alerts.length} asset${alerts.length > 1 ? 's' : ''}`);
+      setTimeout(() => setEmailSuccess(''), 3000);
+    } else {
+      console.error('❌ Failed to send alert email');
+      setEmailError('Failed to send alert email');
+      setTimeout(() => setEmailError(''), 3000);
+    }
+  } catch (err) {
+    console.error('Error sending alert email:', err);
+    setEmailError('Error sending alert notification');
+    setTimeout(() => setEmailError(''), 3000);
+  }
+};
+  
 
   const fetchStockData = async (stockids) => {
     try {
@@ -180,6 +440,12 @@ function App() {
   
       // Global UI timestamp
       setLastUpdate(new Date());
+
+
+
+      if (alertEnabled && Object.keys(latestPrices).length > 0) {
+        checkPriceAlerts(latestPrices);
+      }
 
       if(emailEnabled && emailAddress) {
         sendEmailNotification(latestPrices);
@@ -547,6 +813,181 @@ function App() {
                 ? 'Email notifications will be sent every 30 seconds with updates.' 
                 : 'Toggle on to receive email updates every 30 seconds.'}
             </Typography>
+          </Paper>
+          <Paper elevation={2} sx={{ backgroundColor: "#1a1a1a", p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ color: "white", mb: 2 }}>
+              Price Alert Settings
+            </Typography>
+            
+            <Grid container spacing={3} alignItems="center">
+              <Grid item xs={12} sm={4}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="body1" sx={{ color: 'white', mr: 2 }}>
+                    Enable Price Alerts:
+                  </Typography>
+                  <Box
+                    onClick={() => setAlertEnabled(!alertEnabled)}
+                    sx={{
+                      width: 60,
+                      height: 30,
+                      backgroundColor: alertEnabled ? '#ff9800' : '#666',
+                      borderRadius: 15,
+                      cursor: 'pointer',
+                      position: 'relative',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 3,
+                        left: alertEnabled ? 33 : 3,
+                        width: 24,
+                        height: 24,
+                        backgroundColor: 'white',
+                        borderRadius: '50%',
+                        transition: 'all 0.3s ease'
+                      }}
+                    />
+                  </Box>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ pl: 2 }}>
+                  <Typography variant="body2" sx={{ color: 'white', mb: 1 }}>
+                    Alert Threshold: {alertThreshold}%
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="caption" sx={{ color: '#aaa' }}>
+                      1%
+                    </Typography>
+                    <Slider
+                      value={alertThreshold}
+                      onChange={(e, newValue) => setAlertThreshold(newValue)}
+                      min={1}
+                      max={20}
+                      step={0.5}
+                      disabled={!alertEnabled}
+                      sx={{
+                        color: alertEnabled ? '#ff9800' : '#666',
+                        '& .MuiSlider-thumb': {
+                          backgroundColor: alertEnabled ? '#ff9800' : '#666',
+                        },
+                        '& .MuiSlider-track': {
+                          backgroundColor: alertEnabled ? '#ff9800' : '#666',
+                        }
+                      }}
+                    />
+                    <Typography variant="caption" sx={{ color: '#aaa' }}>
+                      20%
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" sx={{ color: '#aaa', display: 'block', mt: 1 }}>
+                    {alertEnabled 
+                      ? `Email alerts will be sent when any asset changes by ${alertThreshold}% or more (5-minute cooldown)` 
+                      : 'Toggle on to enable price change alerts'}
+                  </Typography>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} sm={2}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={() => {
+                    // Force check for alerts with simulated price changes
+                    if (Object.keys(latestPrices).length > 0 && alertEnabled && emailAddress) {
+                      // Create test alerts by simulating price changes
+                      const testAlerts = [];
+                      const testPrices = { ...latestPrices };
+                      
+                      // Modify first asset for testing
+                      const testAssetId = selectedAssets[0];
+                      if (testAssetId && latestPrices[testAssetId]) {
+                        const testAsset = allAssets.find(a => a.id === testAssetId);
+                        const currentPrice = latestPrices[testAssetId].usd;
+                        const testPrice = currentPrice * (1 + (alertThreshold / 100) + 0.01); // Exceed threshold
+                        
+                        testAlerts.push({
+                          asset: testAsset?.name || testAssetId,
+                          oldPrice: currentPrice,
+                          newPrice: testPrice,
+                          change: alertThreshold + 1,
+                          direction: 'up'
+                        });
+                        
+                        console.log(`🧪 Test alert: ${testAsset?.name} changed by ${alertThreshold + 1}%`);
+                        
+                        // Send test alert
+                        sendAlertEmail(testAlerts, latestPrices);
+                      } else {
+                        setEmailError('No assets available for testing');
+                        setTimeout(() => setEmailError(''), 3000);
+                      }
+                    }
+                  }}
+                  disabled={!alertEnabled || !emailAddress || selectedAssets.length === 0}
+                  sx={{ 
+                    height: '40px',
+                    backgroundColor: '#ff9800',
+                    '&:hover': {
+                      backgroundColor: '#f57c00',
+                    }
+                  }}
+                >
+                  Test Alert
+                </Button>
+              </Grid>
+            </Grid>
+            
+          {alertEnabled && (
+            <Box sx={{ mt: 2, p: 2, backgroundColor: '#2a2a2a', borderRadius: 1 }}>
+              <Typography variant="body2" sx={{ color: '#ff9800', mb: 1 }}>
+                ⚠️ Monitoring {selectedAssets.length} asset{selectedAssets.length !== 1 ? 's' : ''}:
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {selectedAssets.map(assetId => {
+                  const asset = allAssets.find(a => a.id === assetId);
+                  const lastAlertTime = alertCooldown[assetId];
+                  const isOnCooldown = lastAlertTime && (Date.now() - lastAlertTime < 300000);
+                  
+                  return asset ? (
+                    <Box key={assetId} sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Chip
+                        label={asset.name}
+                        size="small"
+                        sx={{
+                          backgroundColor: isOnCooldown ? '#333' : '#444',
+                          color: isOnCooldown ? '#888' : 'white',
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                      {isOnCooldown && (
+                        <Typography variant="caption" sx={{ color: '#888', ml: 1 }}>
+                          (⏳)
+                        </Typography>
+                      )}
+                    </Box>
+                  ) : null;
+                })}
+              </Box>
+              
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="caption" sx={{ color: '#aaa', display: 'block' }}>
+                  📧 Alerts will be sent to: {emailAddress || 'No email set'}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#aaa', display: 'block', mt: 0.5 }}>
+                  ⚡ Current threshold: {alertThreshold}% price change
+                </Typography>
+                {Object.keys(alertCooldown).filter(id => alertCooldown[id] && (Date.now() - alertCooldown[id] < 300000)).length > 0 && (
+                  <Typography variant="caption" sx={{ color: '#ff9800', display: 'block', mt: 1 }}>
+                    ⏳ Some assets are on cooldown (5 minutes between alerts)
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          )}
           </Paper>
               <Typography variant="h6" gutterBottom align="center" sx={{ color: "white", mb: 3 }}>
                 Current Prices
