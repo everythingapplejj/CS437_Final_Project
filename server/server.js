@@ -1,4 +1,5 @@
 const http = require('http');
+const nodemailer = require('nodemailer');
 
 require('dotenv').config({ path: './Server/.env' });
 
@@ -17,6 +18,38 @@ app.use(express.json())
 const PORT = process.env.PORT || 3001;
 
 const server = http.createServer(app);
+
+//* Creating an email transporter
+
+let transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER, 
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+
+//* So this is the endpoint for the email
+app.post('api/send-email', async (req, res) => {
+  try {
+    const {to, subject, text} = req.body;
+    let info = await transporter.sendMail({ 
+      from: `"CS 437 Final Project Update" <${process.env.EMAIL_USER}>`,
+      to: to,
+      subject: subject, 
+      text: text  
+    })
+  } catch (error) {
+    console.error("Error Sending Email: ", error); 
+    res.status(500).json({
+      success: false, 
+      message: "Failed to send email",
+      error: error.message
+    })
+  }
+});
+
 
 app.get('/api/crypto/prices/real', async (req, res) => {
     try {
@@ -49,6 +82,8 @@ app.get('/api/crypto/prices/real', async (req, res) => {
         });
     }
 });
+
+
 
 
 app.get('/api/stocks/prices', async (req, res) => {
